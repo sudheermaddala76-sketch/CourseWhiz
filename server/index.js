@@ -39,6 +39,7 @@ app.use('/api/quiz', quizRoutes);
 app.use('/api/flashcards', flashcardRoutes);
 app.use('/api/ingest', require('./routes/ingestRoutes'));
 app.use('/api/summary', require('./routes/summaryRoutes'));
+app.use('/api/generate-diagram', require('./routes/diagramRoutes'));
 
 // Routes Placeholder
 app.get('/', (req, res) => {

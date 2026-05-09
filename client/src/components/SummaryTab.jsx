@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Loader2, FileText, Sparkles } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import DiagramCard from './diagram/DiagramCard';
 
-const SummaryTab = ({ courseId }) => {
+const SummaryTab = ({ courseId, diagramItems, onRegenerateDiagram, onSimplifyDiagram, onRemoveDiagram, onToggleCollapseDiagram }) => {
     const [summary, setSummary] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -28,6 +29,8 @@ const SummaryTab = ({ courseId }) => {
         }
     }, [courseId]);
 
+
+    const summaryDiagrams = diagramItems.filter((item) => item.anchorId === 'summary-root');
 
     return (
         <div className="p-6 text-white h-[600px] overflow-y-auto custom-scrollbar">
@@ -62,8 +65,26 @@ const SummaryTab = ({ courseId }) => {
 
                 {summary && (
                     <div className="prose prose-invert max-w-none">
-                        <div className="bg-secondary/50 p-8 rounded-2xl border border-gray-800 leading-relaxed text-gray-300">
+                        <div
+                            data-selection-context="true"
+                            data-diagram-anchor-id="summary-root"
+                            className="bg-secondary/50 p-8 rounded-2xl border border-gray-800 leading-relaxed text-gray-300"
+                        >
                             <ReactMarkdown>{summary}</ReactMarkdown>
+                            {summaryDiagrams.length > 0 && (
+                                <div className="mt-6 space-y-2 w-full max-w-[650px] mx-auto">
+                                    {summaryDiagrams.map((item) => (
+                                        <DiagramCard
+                                            key={item.id}
+                                            item={item}
+                                            onRegenerate={onRegenerateDiagram}
+                                            onSimplify={onSimplifyDiagram}
+                                            onRemove={onRemoveDiagram}
+                                            onToggleCollapse={onToggleCollapseDiagram}
+                                        />
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}

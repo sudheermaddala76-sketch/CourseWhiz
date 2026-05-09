@@ -6,11 +6,15 @@ const { splitText } = require('../utils/textSplitter');
 const { v4: uuidv4 } = require('uuid');
 const createCourse = async (req, res) => {
     try {
-        const { title, description, content, pdfFilename } = req.body;
-        console.log(`[CreateCourse] Received title: ${title}, content length: ${content ? content.length : 0}, pdfFilename: ${pdfFilename}`);
+        const { title, description, content, pdfFilename, userId } = req.body;
+        console.log(`[CreateCourse] Received title: ${title}, content length: ${content ? content.length : 0}, pdfFilename: ${pdfFilename}, userId: ${userId}`);
 
         if (!title || !content) {
             return res.status(400).json({ error: "Title and Content are required" });
+        }
+        
+        if (!userId) {
+            return res.status(400).json({ error: "User ID is required" });
         }
 
         // 1. Check DB Connection
@@ -27,7 +31,8 @@ const createCourse = async (req, res) => {
             description,
             contentOriginal: content,
             pdfFilename,
-            pineconeNamespace: namespace
+            pineconeNamespace: namespace,
+            userId
         });
 
         await newCourse.save();
@@ -167,7 +172,10 @@ const searchCourses = async (req, res) => {
         // Fetch full course objects from DB, preserving order (approximation)
         // Since Mongo doesn't preserve order of $in easily, we might just fetch and sort in code if order matters strictly by relevance.
         // For MVP, just fetching is fine.
-        const courses = await Course.find({ _id: { $in: courseIds } });
+        const filter = { _id: { $in: courseIds } };
+        const { userId } = req.query;
+        if (userId) filter.userId = userId;
+        const courses = await Course.find(filter);
 
         // Re-order based on search result relevance
         const orderedCourses = courseIds.map(id => courses.find(c => c._id.toString() === id)).filter(Boolean);
@@ -182,7 +190,13 @@ const searchCourses = async (req, res) => {
 
 const getCourses = async (req, res) => {
     try {
-        const courses = await Course.find().sort({ createdAt: -1 });
+        const { userId } = req.query;
+        
+        if (!userId) {
+            return res.status(400).json({ error: "User ID is required to fetch courses" });
+        }
+
+        const courses = await Course.find({ userId }).sort({ createdAt: -1 });
         res.json(courses);
     } catch (error) {
         console.error("Error fetching courses:", error);

@@ -9,11 +9,11 @@ const CourseSchema = new mongoose.Schema({
         type: String
     },
     contentOriginal: {
-        type: String, // The full text content
-        select: false // Don't return full text by default in lists
+        type: String,
+        select: false
     },
     pdfFilename: {
-        type: String, // The filename of the uploaded PDF
+        type: String,
     },
     createdAt: {
         type: Date,
@@ -23,6 +23,11 @@ const CourseSchema = new mongoose.Schema({
         type: String,
         required: true,
         unique: true
+    },
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
     }
 });
 

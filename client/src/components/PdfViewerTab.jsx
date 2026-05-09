@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { FileText, ExternalLink } from 'lucide-react';
+import DiagramCard from './diagram/DiagramCard';
 
-const PdfViewerTab = ({ pdfFilename }) => {
+const PdfViewerTab = ({ pdfFilename, diagramItems, onRegenerateDiagram, onSimplifyDiagram, onRemoveDiagram, onToggleCollapseDiagram }) => {
     const [hasError, setHasError] = useState(false);
+    const pdfDiagrams = diagramItems.filter((item) => item.anchorId === 'pdf-root');
 
     if (!pdfFilename) {
         return (
@@ -19,7 +21,7 @@ const PdfViewerTab = ({ pdfFilename }) => {
     const fileUrl = `http://localhost:3001/uploads/${pdfFilename}`;
 
     return (
-        <div className="flex flex-col h-full bg-secondary rounded-xl overflow-hidden shadow-inner border border-gray-800">
+        <div data-selection-context="true" data-diagram-anchor-id="pdf-root" className="flex flex-col h-full bg-secondary rounded-xl overflow-hidden shadow-inner border border-gray-800">
             <div className="flex items-center justify-between p-4 border-b border-gray-800 bg-background/30 backdrop-blur-sm">
                 <div className="flex items-center space-x-3">
                     <div className="p-2 bg-cyan-900/30 text-cyan-400 rounded-lg">
@@ -78,6 +80,22 @@ const PdfViewerTab = ({ pdfFilename }) => {
                     </object>
                 )}
             </div>
+            {pdfDiagrams.length > 0 && (
+                <div className="border-t border-gray-800 px-3 py-2 bg-background/50">
+                    <div className="space-y-2 w-full max-w-[650px] mx-auto">
+                        {pdfDiagrams.map((item) => (
+                            <DiagramCard
+                                key={item.id}
+                                item={item}
+                                onRegenerate={onRegenerateDiagram}
+                                onSimplify={onSimplifyDiagram}
+                                onRemove={onRemoveDiagram}
+                                onToggleCollapse={onToggleCollapseDiagram}
+                            />
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

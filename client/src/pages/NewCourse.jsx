@@ -44,7 +44,12 @@ const NewCourse = () => {
         e.preventDefault();
         setLoading(true);
         try {
-            await axios.post('http://localhost:3001/api/courses', formData);
+            const user = JSON.parse(localStorage.getItem('user'));
+            const payload = {
+                ...formData,
+                userId: user?.id
+            };
+            await axios.post('http://localhost:3001/api/courses', payload);
             navigate('/');
         } catch (error) {
             console.error("Failed to create course", error);

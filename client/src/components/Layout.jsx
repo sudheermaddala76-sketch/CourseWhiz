@@ -1,12 +1,17 @@
 import React, { useState } from 'react';
-import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { LayoutDashboard, PlusCircle, LogOut, Code2, Sparkles } from 'lucide-react';
 import FallingPapers from './FallingPapers';
 
 const Layout = () => {
     const location = useLocation();
     const navigate = useNavigate();
+    const token = localStorage.getItem('token');
     const user = JSON.parse(localStorage.getItem('user'));
+
+    if (!token) {
+        return <Navigate to="/login" replace />;
+    }
 
     const handleLogout = () => {
         localStorage.removeItem('token');

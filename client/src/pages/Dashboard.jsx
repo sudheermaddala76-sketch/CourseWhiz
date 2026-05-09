@@ -12,9 +12,17 @@ const Dashboard = () => {
     const fetchCourses = useCallback(async (query = '') => {
         setLoading(true);
         try {
-            const url = query.trim()
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user || !user.id) {
+                setLoading(false);
+                return;
+            }
+
+            const baseUrl = query.trim()
                 ? `http://localhost:3001/api/courses/search?query=${encodeURIComponent(query)}`
                 : 'http://localhost:3001/api/courses';
+                
+            const url = baseUrl + (baseUrl.includes('?') ? '&' : '?') + `userId=${user.id}`;
 
             const response = await axios.get(url);
             setCourses(response.data);
