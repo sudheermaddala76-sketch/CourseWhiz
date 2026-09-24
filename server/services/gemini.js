@@ -52,15 +52,48 @@ const getEmbedding = async (text) => {
     }
 };
 
-const generateContent = async (prompt, modelName = "gemini-2.5-flash") => {
+const executeWithRetryAndFallback = async (preferredModel, requestFn) => {
+    const candidateModels = Array.from(new Set([
+        preferredModel,
+        "gemini-3.6-flash",
+        "gemini-3-flash-preview"
+    ])).filter(Boolean);
+
+    let lastError = null;
+    for (const model of candidateModels) {
+        for (let attempt = 0; attempt < 2; attempt++) {
+            try {
+                return await requestFn(model);
+            } catch (err) {
+                lastError = err;
+                const msg = err.message || '';
+                const isOverloaded = err.status === 503 || msg.includes('503') || msg.includes('high demand') || msg.includes('UNAVAILABLE');
+                const isRateLimit = err.status === 429 || msg.includes('429');
+
+                if (isOverloaded || isRateLimit) {
+                    console.warn(`Model ${model} hit ${isOverloaded ? '503 (high demand)' : '429 (rate limit)'} on attempt ${attempt + 1}. Retrying...`);
+                    await new Promise(r => setTimeout(r, 1200 * (attempt + 1)));
+                    continue;
+                }
+                // Non-transient error for this model, try next candidate model
+                break;
+            }
+        }
+    }
+    throw lastError;
+};
+
+const generateContent = async (prompt, modelName = "gemini-3.6-flash") => {
     try {
         const client = getGeminiClient();
         if (!client) throw new Error("Gemini Client not initialized");
 
-        const response = await client.models.generateContent({
-            model: modelName,
-            contents: { role: 'user', parts: [{ text: prompt }] }
-        });
+        const response = await executeWithRetryAndFallback(modelName, (model) =>
+            client.models.generateContent({
+                model: model,
+                contents: { role: 'user', parts: [{ text: prompt }] }
+            })
+        );
 
         if (response.text) {
             return typeof response.text === 'function' ? response.text() : response.text;
@@ -83,18 +116,20 @@ const generateContent = async (prompt, modelName = "gemini-2.5-flash") => {
     }
 };
 
-const generateJSON = async (prompt, modelName = "gemini-2.5-flash") => {
+const generateJSON = async (prompt, modelName = "gemini-3.6-flash") => {
     try {
         const client = getGeminiClient();
         if (!client) throw new Error("Gemini Client not initialized");
 
-        const response = await client.models.generateContent({
-            model: modelName,
-            contents: { role: 'user', parts: [{ text: prompt }] },
-            config: {
-                responseMimeType: 'application/json'
-            }
-        });
+        const response = await executeWithRetryAndFallback(modelName, (model) =>
+            client.models.generateContent({
+                model: model,
+                contents: { role: 'user', parts: [{ text: prompt }] },
+                config: {
+                    responseMimeType: 'application/json'
+                }
+            })
+        );
 
         let text = "";
         if (response.text) {
@@ -119,29 +154,38 @@ const generateJSON = async (prompt, modelName = "gemini-2.5-flash") => {
     }
 };
 
-const extractTextFromFile = async (fileBuffer, mimeType) => {
+const extractTextFromFile = async (fileBuffer, mimeType, fileKind = 'auto') => {
     try {
         const client = getGeminiClient();
         if (!client) throw new Error("Gemini Client not initialized");
 
         const base64Data = fileBuffer.toString('base64');
+        const kind = fileKind === 'pdf' ? 'pdf' : fileKind === 'image' ? 'image' : (mimeType || '').includes('pdf') ? 'pdf' : (mimeType || '').startsWith('image/') ? 'image' : 'file';
 
-        const response = await client.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: {
-                parts: [
-                    {
-                        inlineData: {
-                            mimeType: mimeType,
-                            data: base64Data
+        const prompt = kind === 'pdf'
+            ? "Extract all visible text from every page of this PDF in reading order. If the PDF is scanned or contains images, perform OCR and include the extracted text. Preserve headings, paragraphs, and page order. Return only the extracted text, with no extra commentary."
+            : kind === 'image'
+                ? "Extract all visible text from this image or scanned document. If text is embedded in graphics or scanned pages, read it carefully and return the extracted text in reading order. Return only the text, with no extra commentary."
+                : "Extract all text from this file verbatim. If the file contains scanned or image-based content, read the text from the images as well. Return only the extracted text, with no extra commentary.";
+
+        const response = await executeWithRetryAndFallback("gemini-3.6-flash", (model) =>
+            client.models.generateContent({
+                model: model,
+                contents: {
+                    parts: [
+                        {
+                            inlineData: {
+                                mimeType: mimeType,
+                                data: base64Data
+                            }
+                        },
+                        {
+                            text: prompt
                         }
-                    },
-                    {
-                        text: "Extract all text from this file verbatim. Return only the text, no conversational filler."
-                    }
-                ]
-            }
-        });
+                    ]
+                }
+            })
+        );
 
         if (response.text) {
             return typeof response.text === 'function' ? response.text() : response.text;

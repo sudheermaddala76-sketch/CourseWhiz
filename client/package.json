@@ -12,6 +12,9 @@
   "dependencies": {
     "autoprefixer": "^10.4.23",
     "axios": "^1.13.2",
+    "baseline-browser-mapping": "^2.11.25",
+    "caniuse-lite": "^1.0.30001810",
+    "firebase": "^12.13.0",
     "framer-motion": "^12.38.0",
     "html-to-image": "^1.11.13",
     "lucide-react": "^0.562.0",

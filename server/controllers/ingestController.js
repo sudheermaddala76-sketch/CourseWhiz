@@ -1,8 +1,39 @@
 const mult = require('multer');
 const { extractTextFromFile } = require('../services/gemini');
-const pdf = require('pdf-parse');
 const path = require('path');
 const fs = require('fs');
+
+const extractTextFromPDF = async (buffer) => {
+    const { PDFParse } = require('pdf-parse');
+    const parser = new PDFParse({ data: buffer });
+
+    try {
+        const result = await parser.getText();
+        return result?.text || '';
+    } finally {
+        if (parser && typeof parser.destroy === 'function') {
+            await parser.destroy();
+        }
+    }
+};
+
+const normalizeMimeType = (mimetype, fileName = '') => {
+    const lowerName = (fileName || '').toLowerCase();
+
+    if (mimetype && mimetype !== 'application/octet-stream') {
+        return mimetype;
+    }
+
+    if (lowerName.endsWith('.pdf')) {
+        return 'application/pdf';
+    }
+
+    if (lowerName.match(/\.(png|jpg|jpeg|gif|webp|bmp)$/)) {
+        return `image/${lowerName.endsWith('.jpg') || lowerName.endsWith('.jpeg') ? 'jpeg' : lowerName.split('.').pop()}`;
+    }
+
+    return mimetype || 'application/octet-stream';
+};
 
 // Ensure uploads directory exists
 const uploadDir = path.join(__dirname, '../uploads');
@@ -31,30 +62,32 @@ const ingestFile = async (req, res) => {
         }
         console.log("File details:", req.file.originalname, req.file.mimetype, req.file.size);
 
-        const { mimetype, path: filePath, filename } = req.file;
+        const { mimetype, path: filePath, filename, originalname } = req.file;
+        const normalizedMimeType = normalizeMimeType(mimetype, originalname);
         let text = "";
-        
+
         // Read file into buffer since pdf-parse and gemini expect a buffer
         const buffer = fs.readFileSync(filePath);
 
-        if (mimetype === 'application/pdf') {
-            try {
-                const data = await pdf(buffer);
-                text = data.text;
+        const isPdf = normalizedMimeType === 'application/pdf' || (originalname || '').toLowerCase().endsWith('.pdf');
+        const isImage = normalizedMimeType.startsWith('image/');
 
-                // Check if PDF parse returned empty text (likely a scanned PDF)
-                if (!text || text.trim().length < 50) { // arbitrary threshold for "empty"
-                    console.log("PDF parsed locally but text is empty/too short. Likely scanned. Triggering fallback.");
+        if (isPdf) {
+            try {
+                text = await extractTextFromPDF(buffer);
+
+                if (!text || text.trim().length < 30) {
+                    console.log("PDF parsed locally but text is empty/too short. Likely scanned or image-based. Triggering Gemini OCR fallback.");
                     throw new Error("Scanned PDF detected (low text content)");
                 }
 
                 console.log(`[Ingest] Extracted text from PDF. Length: ${text.length}`);
             } catch (pdfError) {
-                console.warn("Local PDF parse failed, falling back to Gemini:", pdfError.message);
+                console.warn("Local PDF parse failed, falling back to Gemini OCR:", pdfError.message);
                 try {
-                    const geminiText = await extractTextFromFile(buffer, mimetype);
+                    const geminiText = await extractTextFromFile(buffer, normalizedMimeType, 'pdf');
                     text = geminiText;
-                    console.log(`[Ingest] Extracted text from PDF (Gemini). Length: ${text ? text.length : 0}`);
+                    console.log(`[Ingest] Extracted text from PDF (Gemini OCR). Length: ${text ? text.length : 0}`);
                 } catch (geminiError) {
                     console.error("Gemini PDF extraction also failed:", geminiError);
                     return res.status(400).json({
@@ -62,13 +95,12 @@ const ingestFile = async (req, res) => {
                     });
                 }
             }
-        } else if (mimetype.startsWith('image/')) {
-            text = await extractTextFromFile(buffer, mimetype);
+        } else if (isImage) {
+            text = await extractTextFromFile(buffer, normalizedMimeType, 'image');
             console.log(`[Ingest] Extracted text from Image. Length: ${text ? text.length : 0}`);
-        } else if (mimetype === 'text/plain') {
+        } else if (normalizedMimeType === 'text/plain') {
             text = buffer.toString('utf-8');
         } else {
-            // Remove unsupported file
             fs.unlinkSync(filePath);
             return res.status(400).json({ error: "Unsupported file type" });
         }

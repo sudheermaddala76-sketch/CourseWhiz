@@ -21,7 +21,7 @@ const Dashboard = () => {
             const baseUrl = query.trim()
                 ? `http://localhost:3001/api/courses/search?query=${encodeURIComponent(query)}`
                 : 'http://localhost:3001/api/courses';
-                
+
             const url = baseUrl + (baseUrl.includes('?') ? '&' : '?') + `userId=${user.id}`;
 
             const response = await axios.get(url);

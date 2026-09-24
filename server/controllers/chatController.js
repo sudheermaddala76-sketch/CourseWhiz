@@ -11,48 +11,80 @@ const chatWithCourse = async (req, res) => {
             return res.status(400).json({ error: "courseId, userId, and message are required" });
         }
 
-        const course = await Course.findById(courseId);
+        const course = await Course.findById(courseId).select('+contentOriginal');
         if (!course) return res.status(404).json({ error: "Course not found" });
 
         const namespace = course.pineconeNamespace;
+        const courseContent = course.contentOriginal || '';
 
-        // 1. Embed the query
-        const queryEmbedding = await getEmbedding(message);
+        let contexts = '';
 
-        // 2. Query Pinecone
-        const pinecone = await getPineconeClient();
-        if (!pinecone) return res.status(500).json({ error: "Vector DB unavailable" });
+        try {
+            // 1. Embed the query
+            const queryEmbedding = await getEmbedding(message);
 
-        const indexName = process.env.PINECONE_INDEX || 'coursewhiz';
-        const index = pinecone.index(indexName);
-        const queryResponse = await index.namespace(namespace).query({
-            vector: queryEmbedding,
-            topK: 3,
-            includeMetadata: true
-        });
+            // 2. Query Pinecone
+            const pinecone = await getPineconeClient();
+            if (!pinecone) {
+                console.warn("Pinecone unavailable, falling back to stored course content for chat answer.");
+                contexts = courseContent;
+            } else {
+                const indexName = process.env.PINECONE_INDEX || 'coursewhiz';
+                const index = pinecone.index(indexName);
+                const queryResponse = await index.namespace(namespace).query({
+                    vector: queryEmbedding,
+                    topK: 3,
+                    includeMetadata: true
+                });
 
-        // 3. Construct Context
-        const contexts = queryResponse.matches.map(match => match.metadata.text).join("\n\n");
-
-        if (!contexts) {
-            // Fallback if no context found (optional)
-            return res.json({ answer: "I couldn't find relevant information in the course material." });
+                contexts = (queryResponse?.matches || [])
+                    .map(match => match?.metadata?.text)
+                    .filter(Boolean)
+                    .join("\n\n");
+            }
+        } catch (pineconeError) {
+            console.error("Pinecone query failed, using direct course content fallback:", pineconeError);
+            contexts = courseContent;
         }
+
+        if (!contexts || !contexts.trim()) {
+            if (courseContent && courseContent.trim()) {
+                contexts = courseContent;
+            } else {
+                return res.json({ answer: "I couldn't find relevant information in the course material." });
+            }
+        }
+
+        const lowerMessage = (message || '').toLowerCase();
+        const userRequestedShortFormat = /(one line|one-line|single line|one sentence|very short|short answer|brief answer|few words|in 1 line|in 2 lines|in 3 lines|just answer|answer in short|give only)/i.test(lowerMessage);
 
         const prompt = `
         You are a helpful study assistant. Answer the user's question based on the provided input.
-        
-        STRICT RULES:
+
+        HIGHEST PRIORITY RULE:
+        - If the user explicitly asks for a specific format like "one line", "short answer", "single sentence", "3 bullet points", "brief", or "in 2 lines", then the user's format instruction has priority over every other rule.
+        - Follow the user's exact requested format even if it conflicts with the default template.
+        - Do not add headings, sections, or extra explanation when the user asks for a brief answer.
+        - If the user says "one line", return exactly one line only.
+        - If the user says "brief" or "short", keep it to 1-3 sentences or very compact bullet points.
+        - If the user asks for bullets, give only bullets.
+
+        GENERAL RULES:
         - Do NOT mix multiple topics together.
         - If the input contains multiple concepts, separate them clearly.
         - Each concept must be explained independently.
         - Do NOT combine unrelated topics under one heading.
         - Keep explanations simple and student-friendly.
         - Base your answer primarily on the provided INPUT. If the INPUT lacks details, you may use your general knowledge, but you MUST explicitly state which parts are not from the provided PDF.
-        - Keep your entire answer concise, between 200 and 500 words. Do not exceed 500 words.
-        - Use bold text (**text**) to highlight key terms within your explanations.
-        - Use proper Markdown spacing and formatting exactly as shown below.
+        - Use bold text (**text**) only when helpful and consistent with the user's requested format.
 
+        ${userRequestedShortFormat ? `
+        FORMAT OVERRIDE:
+        - The user requested a short format. Keep the answer extremely compact.
+        - Do not use the long structured template.
+        - Return only the requested compact format.
+        - Maximum length: 1-3 sentences or a very short list, depending on the user's specific instruction.
+        ` : `
         OUTPUT FORMAT MUST MATCH EXACTLY:
 
         For each concept:
@@ -91,13 +123,14 @@ const chatWithCourse = async (req, res) => {
         - If two topics are unrelated, create separate sections.
         - Do NOT include unnecessary paragraphs.
         - Rewrite content cleanly instead of copying.
-        - give one line spacing between each section.
+        - Give one line spacing between each section.
+        `}
 
         INPUT:
         ${contexts}
-        
+
         User's Question: ${message}
-        
+
         Answer:
         `;
 

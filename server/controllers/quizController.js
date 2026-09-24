@@ -1,5 +1,6 @@
 const Course = require('../models/Course');
-const { generateJSON, generateContent, getPineconeClient, getEmbedding } = require('../services/gemini');
+const { getPineconeClient } = require('../config/pinecone');
+const { generateJSON, generateContent, getEmbedding } = require('../services/gemini');
 
 const generateQuiz = async (req, res) => {
     try {

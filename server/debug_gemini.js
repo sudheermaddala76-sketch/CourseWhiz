@@ -14,7 +14,7 @@ const log = (msg) => {
 };
 
 async function test() {
-    log("Starting Gemini 2.5 Flash Debug...");
+    log("Starting Gemini 3 Flash Preview Debug...");
 
     if (!process.env.GEMINI_API_KEY) {
         log("ERROR: GEMINI_API_KEY missing");
@@ -24,10 +24,10 @@ async function test() {
     try {
         const client = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-        log("Client initialized. Attempting generateContent with gemini-2.5-flash...");
+        log("Client initialized. Attempting generateContent with gemini-3-flash-preview...");
 
         const response = await client.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3-flash-preview',
             contents: {
                 role: 'user',
                 parts: [{ text: "Hello, reply with 'Working'" }]

@@ -21,10 +21,10 @@ const ChatTab = ({ courseId, diagramItems, onRegenerateDiagram, onSimplifyDiagra
             try {
                 const user = JSON.parse(localStorage.getItem('user'));
                 if (!user) return;
-                
+
                 const response = await axios.get(`http://localhost:3001/api/chat/${courseId}?userId=${user.id}`);
                 const history = response.data;
-                
+
                 if (history && history.length > 0) {
                     setMessages(history);
                 }
@@ -32,7 +32,7 @@ const ChatTab = ({ courseId, diagramItems, onRegenerateDiagram, onSimplifyDiagra
                 console.error("Failed to load char history", error);
             }
         };
-        
+
         loadHistory();
     }, [courseId]);
 
@@ -42,11 +42,11 @@ const ChatTab = ({ courseId, diagramItems, onRegenerateDiagram, onSimplifyDiagra
 
     const handleClearHistory = async () => {
         if (!window.confirm("Are you sure you want to clear your chat history?")) return;
-        
+
         try {
             const user = JSON.parse(localStorage.getItem('user'));
             if (!user) return;
-            
+
             await axios.delete(`http://localhost:3001/api/chat/${courseId}?userId=${user.id}`);
             setMessages([{ role: 'bot', text: 'Hello! I am ready to help you study this material. Ask me anything!' }]);
         } catch (error) {
