@@ -22,7 +22,7 @@ const ChatTab = ({ courseId, diagramItems, onRegenerateDiagram, onSimplifyDiagra
                 const user = JSON.parse(localStorage.getItem('user'));
                 if (!user) return;
 
-                const response = await axios.get(`http://localhost:3001/api/chat/${courseId}?userId=${user.id}`);
+                const response = await axios.get(`https://coursewhiz-backend-xt2i.onrender.com/api/chat/${courseId}?userId=${user.id}`);
                 const history = response.data;
 
                 if (history && history.length > 0) {
@@ -47,7 +47,7 @@ const ChatTab = ({ courseId, diagramItems, onRegenerateDiagram, onSimplifyDiagra
             const user = JSON.parse(localStorage.getItem('user'));
             if (!user) return;
 
-            await axios.delete(`http://localhost:3001/api/chat/${courseId}?userId=${user.id}`);
+            await axios.delete(`https://coursewhiz-backend-xt2i.onrender.com/api/chat/${courseId}?userId=${user.id}`);
             setMessages([{ role: 'bot', text: 'Hello! I am ready to help you study this material. Ask me anything!' }]);
         } catch (error) {
             console.error("Failed to clear chat history", error);
@@ -65,7 +65,7 @@ const ChatTab = ({ courseId, diagramItems, onRegenerateDiagram, onSimplifyDiagra
 
         try {
             const user = JSON.parse(localStorage.getItem('user'));
-            const response = await axios.post('http://localhost:3001/api/chat', {
+            const response = await axios.post('https://coursewhiz-backend-xt2i.onrender.com/api/chat', {
                 courseId,
                 userId: user?.id,
                 message: userMessage

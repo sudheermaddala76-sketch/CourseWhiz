@@ -15,7 +15,7 @@ const QuizTab = ({ courseId }) => {
         setAnswers({});
         setResults({});
         try {
-            const response = await axios.post('http://localhost:3001/api/quiz/generate', { courseId });
+            const response = await axios.post('https://coursewhiz-backend-xt2i.onrender.com/api/quiz/generate', { courseId });
             setQuiz(response.data);
         } catch (error) {
             console.error("Quiz Gen Error", error);
@@ -70,7 +70,7 @@ const QuizTab = ({ courseId }) => {
                 const user = JSON.parse(localStorage.getItem('user'));
                 if (user && user.id) {
                     const pointsToAdd = correctCount * 10; // 10 points per correct answer
-                    const res = await axios.post('http://localhost:3001/api/auth/points', {
+                    const res = await axios.post('https://coursewhiz-backend-xt2i.onrender.com/api/auth/points', {
                         userId: user.id,
                         pointsToAdd
                     });

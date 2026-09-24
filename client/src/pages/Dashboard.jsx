@@ -19,8 +19,8 @@ const Dashboard = () => {
             }
 
             const baseUrl = query.trim()
-                ? `http://localhost:3001/api/courses/search?query=${encodeURIComponent(query)}`
-                : 'http://localhost:3001/api/courses';
+                ? `https://coursewhiz-backend-xt2i.onrender.com/api/courses/search?query=${encodeURIComponent(query)}`
+                : 'https://coursewhiz-backend-xt2i.onrender.com/api/courses';
 
             const url = baseUrl + (baseUrl.includes('?') ? '&' : '?') + `userId=${user.id}`;
 
@@ -51,7 +51,7 @@ const Dashboard = () => {
 
         if (window.confirm("Are you sure you want to delete this course? This action cannot be undone.")) {
             try {
-                await axios.delete(`http://localhost:3001/api/courses/${courseId}`);
+                await axios.delete(`https://coursewhiz-backend-xt2i.onrender.com/api/courses/${courseId}`);
                 setCourses(courses.filter(c => c._id !== courseId));
             } catch (error) {
                 console.error("Failed to delete course", error);

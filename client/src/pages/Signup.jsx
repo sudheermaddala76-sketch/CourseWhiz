@@ -86,7 +86,7 @@ const Signup = () => {
       }
 
       // 2. Create user in MongoDB to get the required database ID
-      const res = await axios.post('http://localhost:3001/api/auth/register', {
+      const res = await axios.post('https://coursewhiz-backend-xt2i.onrender.com/api/auth/register', {
         name: trimmedName,
         email: trimmedEmail,
         password: formData.password

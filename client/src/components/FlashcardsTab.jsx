@@ -14,7 +14,7 @@ const FlashcardsTab = ({ courseId }) => {
         setCurrentIndex(0);
         setIsFlipped(false);
         try {
-            const response = await axios.post('http://localhost:3001/api/flashcards', { courseId });
+            const response = await axios.post('https://coursewhiz-backend-xt2i.onrender.com/api/flashcards', { courseId });
             setCards(response.data);
         } catch (error) {
             console.error("Flashcard Gen Error", error);

@@ -24,7 +24,7 @@ const NewCourse = () => {
 
         try {
             // Ingest file
-            const response = await axios.post('http://localhost:3001/api/ingest', data);
+            const response = await axios.post('https://coursewhiz-backend-xt2i.onrender.com/api/ingest', data);
 
             setFormData(prev => ({
                 ...prev,
@@ -49,7 +49,7 @@ const NewCourse = () => {
                 ...formData,
                 userId: user?.id
             };
-            await axios.post('http://localhost:3001/api/courses', payload);
+            await axios.post('https://coursewhiz-backend-xt2i.onrender.com/api/courses', payload);
             navigate('/');
         } catch (error) {
             console.error("Failed to create course", error);

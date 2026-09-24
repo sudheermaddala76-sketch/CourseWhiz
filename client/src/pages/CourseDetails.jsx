@@ -19,7 +19,7 @@ const CourseDetails = () => {
     useEffect(() => {
         const fetchCourse = async () => {
             try {
-                const response = await axios.get(`http://localhost:3001/api/courses/${id}`);
+                const response = await axios.get(`https://coursewhiz-backend-xt2i.onrender.com/api/courses/${id}`);
                 setCourse(response.data);
             } catch (error) {
                 console.error("Failed to fetch course", error);
@@ -75,7 +75,7 @@ const CourseDetails = () => {
         }
 
         try {
-            const response = await axios.post('http://localhost:3001/api/generate-diagram', {
+            const response = await axios.post('https://coursewhiz-backend-xt2i.onrender.com/api/generate-diagram', {
                 text: normalizedText,
                 action,
                 previousDiagram

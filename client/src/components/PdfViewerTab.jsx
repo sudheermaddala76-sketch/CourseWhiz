@@ -18,7 +18,7 @@ const PdfViewerTab = ({ pdfFilename, diagramItems, onRegenerateDiagram, onSimpli
         );
     }
 
-    const fileUrl = `http://localhost:3001/uploads/${pdfFilename}`;
+    const fileUrl = `https://coursewhiz-backend-xt2i.onrender.com/uploads/${pdfFilename}`;
 
     return (
         <div data-selection-context="true" data-diagram-anchor-id="pdf-root" className="flex flex-col h-full bg-secondary rounded-xl overflow-hidden shadow-inner border border-gray-800">

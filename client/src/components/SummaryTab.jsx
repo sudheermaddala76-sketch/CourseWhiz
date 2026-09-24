@@ -13,7 +13,7 @@ const SummaryTab = ({ courseId, diagramItems, onRegenerateDiagram, onSimplifyDia
         setLoading(true);
         setError(null);
         try {
-            const response = await axios.post(`http://localhost:3001/api/summary/${courseId}`);
+            const response = await axios.post(`https://coursewhiz-backend-xt2i.onrender.com/api/summary/${courseId}`);
             setSummary(response.data.summary);
         } catch (err) {
             console.error("Failed to generate summary", err);

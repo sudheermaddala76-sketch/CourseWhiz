@@ -46,7 +46,7 @@ const Login = () => {
       const firebaseToken = await userCredential.user.getIdToken();
 
       // 2. Authenticate with MongoDB to get the required database ID and user points
-      const res = await axios.post('http://localhost:3001/api/auth/login', {
+      const res = await axios.post('https://coursewhiz-backend-xt2i.onrender.com/api/auth/login', {
         email: trimmedEmail,
         password: formData.password,
         firebaseToken
