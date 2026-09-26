@@ -1,4 +1,4 @@
-# courseWhiz
+# courseWhiz link:https://course-whiz-peach.vercel.app/login
 ### AI-Powered Study Companion & Quiz Engine
 CourseWhiz is a full-stack AI-powered learning platform that helps students transform their own study materials into interactive learning experiences. Users can upload PDFs or notes, organize them into courses, ask questions through an AI study assistant, generate quizzes and flashcards, and evaluate subjective answers using content-grounded AI.
 The platform uses Retrieval-Augmented Generation (RAG) so that responses and learning content are based on the user's uploaded study material rather than unrestricted general knowledge.
